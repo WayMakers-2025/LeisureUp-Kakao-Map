@@ -28,9 +28,12 @@
           this.markers = []; // 다중 마커 인스턴스
           this.isMapReady = false;
           this.pendingCommands = [];
+          this.isReactNativeWebView = typeof window.ReactNativeWebView !== 'undefined';
 
           this.initializeMap();
-          this.setupMessageListener();
+          if (this.isReactNativeWebView) {
+            this.setupMessageListener();
+          }
         }
 
         // 맵 초기화
@@ -43,12 +46,9 @@
 
               const mapContainer = document.getElementById('map');
 
-              // 맵 초기 설정
+              // 맵 초기 설정 - 서울 좌표로 고정
               const mapOption = {
-                center: new kakao.maps.LatLng(
-                  Number('{{INITIAL_LATITUDE}}'),
-                  Number('{{INITIAL_LONGITUDE}}'),
-                ),
+                center: new kakao.maps.LatLng(37.5665, 126.9780),
                 level: 3,
               };
 
@@ -94,11 +94,19 @@
           window.marker = this.marker;
         }
 
-        // 메시지 리스너 설정
+        // 메시지 리스너 설정 - React Native WebView에서만 활성화
         setupMessageListener() {
+          if (!this.isReactNativeWebView) {
+            console.log('Browser environment - message listener disabled');
+            return;
+          }
+          
           window.addEventListener('message', event => {
             try {
-              const data = JSON.parse(event.data);
+              // React Native WebView에서는 문자열로 전송됨
+              const data = typeof event.data === 'string' 
+                ? JSON.parse(event.data) 
+                : event.data;
               console.log('Received message:', data);
               this.handleCommand(data);
             } catch (error) {
@@ -326,16 +334,12 @@
           console.log('All markers and overlays cleared');
         }
 
-        // 메시지 전송
+        // 메시지 전송 - React Native WebView에서만
         postMessage(messageObj) {
-          if (window.ReactNativeWebView) {
-            // 객체를 JSON 문자열로 변환하여 전송
+          if (this.isReactNativeWebView && window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage(JSON.stringify(messageObj));
           } else {
-            console.log(
-              'ReactNativeWebView not available, message:',
-              messageObj,
-            );
+            console.log('Message (browser mode):', messageObj);
           }
         }
       }
