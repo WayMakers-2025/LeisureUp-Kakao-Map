@@ -26,6 +26,8 @@
           this.map = null; // 카카오맵 인스턴스
           this.marker = null; // 마커 인스턴스
           this.markers = []; // 다중 마커 인스턴스
+          this.polyline = null; // 경로 라인 인스턴스
+          this.outlinePolyline = null; // 윤곽선 라인 인스턴스
           this.isMapReady = false;
           this.pendingCommands = [];
           this.isReactNativeWebView = typeof window.ReactNativeWebView !== 'undefined';
@@ -148,6 +150,9 @@
               break;
             case 'clearMarkers':
               this.clearMarkers();
+              break;
+            case 'drawTravelRoute':
+              this.drawTravelRoute(data.markers);
               break;
             default:
               console.warn('Unknown command:', data.type);
@@ -331,7 +336,70 @@
             }
           });
           this.markers = [];
-          console.log('All markers and overlays cleared');
+          // 경로 라인도 제거
+          if (this.polyline) {
+            this.polyline.setMap(null);
+            this.polyline = null;
+          }
+
+          if (this.outlinePolyline) {
+            this.outlinePolyline.setMap(null);
+            this.outlinePolyline = null;
+          }
+
+          console.log('All markers, overlays and route cleared');
+        }
+
+        // 여행 경로 그리기
+        drawTravelRoute(markers) {
+          console.log('drawTravelRoute called with:', markers);
+          if (this.map && markers && markers.length > 1) {
+            // 기존 경로 라인 제거
+            if (this.polyline) {
+              this.polyline.setMap(null);
+            }
+            if (this.outlinePolyline) {
+              this.outlinePolyline.setMap(null);
+            }
+
+            // 마커들의 좌표로 경로 생성
+            const linePath = markers.map(marker => {
+              console.log(
+                `Creating path point: lat=${marker.latitude}, lng=${marker.longitude}`,
+              );
+              return new kakao.maps.LatLng(marker.latitude, marker.longitude);
+            });
+
+            console.log('Line path created with', linePath.length, 'points');
+
+            // 윤곽용 라인
+            this.outlinePolyline = new kakao.maps.Polyline({
+              path: linePath,
+              strokeWeight: 8, // 6px + 2px (양쪽 1px씩)
+              strokeColor: '#FFFFFF',
+              strokeOpacity: 1,
+              strokeStyle: 'solid',
+            });
+
+            // 여행 경로 라인 생성 (8px 두께, primary color, 흰색 윤곽)
+            this.polyline = new kakao.maps.Polyline({
+              path: linePath,
+              strokeWeight: 6,
+              strokeColor: '#00AEEF', // primary color
+              strokeOpacity: 1,
+              strokeStyle: 'solid',
+            });
+
+            // 윤곽선을 먼저 그리고, 그 위에 메인 라인을 그림
+            this.outlinePolyline.setMap(this.map);
+            this.polyline.setMap(this.map);
+
+            console.log('Travel route drawn with', markers.length, 'points');
+          } else {
+            console.log(
+              'Cannot draw route: need at least 2 markers and map must be ready',
+            );
+          }
         }
 
         // 메시지 전송 - React Native WebView에서만
