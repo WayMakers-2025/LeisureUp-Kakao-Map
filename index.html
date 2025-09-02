@@ -336,6 +336,7 @@
             }
           });
           this.markers = [];
+          
           // 경로 라인도 제거
           if (this.polyline) {
             this.polyline.setMap(null);
@@ -372,19 +373,19 @@
 
             console.log('Line path created with', linePath.length, 'points');
 
-            // 윤곽용 라인
+            // 윤곽용 라인 (흰색, 더 두꺼움)
             this.outlinePolyline = new kakao.maps.Polyline({
               path: linePath,
-              strokeWeight: 8, // 6px + 2px (양쪽 1px씩)
+              strokeWeight: 10, // 8px + 2px (양쪽 1px씩)
               strokeColor: '#FFFFFF',
               strokeOpacity: 1,
               strokeStyle: 'solid',
             });
 
-            // 여행 경로 라인 생성 (8px 두께, primary color, 흰색 윤곽)
+            // 여행 경로 라인 생성 (8px 두께, primary color)
             this.polyline = new kakao.maps.Polyline({
               path: linePath,
-              strokeWeight: 6,
+              strokeWeight: 8,
               strokeColor: '#00AEEF', // primary color
               strokeOpacity: 1,
               strokeStyle: 'solid',
